@@ -20,7 +20,7 @@ namespace RedisCache.Controllers
             _cacheService = cacheService;
         }
        
-        [HttpGet("product")]
+        [HttpGet("products")]
         public IEnumerable<Product> Get()
         {
             var cacheData = _cacheService.GetData<IEnumerable<Product>>("product");
@@ -35,6 +35,20 @@ namespace RedisCache.Controllers
                 _cacheService.SetData<IEnumerable<Product>>("product", cacheData, expirationTime);
             }
             return cacheData;
+        }
+
+        [HttpGet("product")]
+        public Product Get(int id)
+        {
+            Product filteredData;
+            var cacheData = _cacheService.GetData<IEnumerable<Product>>("product").Where(x => x.ProductId == id);
+            if (cacheData != null)
+            {
+                filteredData = cacheData.FirstOrDefault(x => x.ProductId == id);
+                return filteredData;
+            }
+            filteredData = _dbContext.Products.Where(x => x.ProductId == id).FirstOrDefault();
+            return filteredData;
         }
         [HttpPost("addproduct")]
         public async Task<Product> Post(Product value)
