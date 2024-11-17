@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RedisCache.Cache;
 using RedisCache.Model;
 using RedisCache.Data;
+using RedisCache.Services;
 
 namespace RedisCache.Controllers
 {
@@ -13,42 +14,25 @@ namespace RedisCache.Controllers
         private readonly DbContextClass _dbContext;
         private readonly ICacheService _cacheService;
         private static object _lock = new object();
+        private IProduct _product;
 
-        public ProductController(DbContextClass dbContext, ICacheService cacheService)
+        public ProductController(DbContextClass dbContext, ICacheService cacheService,IProduct product)
         {
             _dbContext = dbContext;
             _cacheService = cacheService;
+            _product = product;
         }
        
         [HttpGet("products")]
         public IEnumerable<Product> Get()
         {
-            var cacheData = _cacheService.GetData<IEnumerable<Product>>("product");
-            if (cacheData != null)
-            {
-                return cacheData;
-            }
-            lock (_lock)
-            {
-                var expirationTime = DateTimeOffset.Now.AddMinutes(5.0);
-                cacheData = _dbContext.Products.ToList();
-                _cacheService.SetData<IEnumerable<Product>>("product", cacheData, expirationTime);
-            }
-            return cacheData;
+            return _product.Get();
         }
 
         [HttpGet("product")]
         public Product Get(int id)
         {
-            Product filteredData;
-            var cacheData = _cacheService.GetData<IEnumerable<Product>>("product").Where(x => x.ProductId == id);
-            if (cacheData != null)
-            {
-                filteredData = cacheData.FirstOrDefault(x => x.ProductId == id);
-                return filteredData;
-            }
-            filteredData = _dbContext.Products.Where(x => x.ProductId == id).FirstOrDefault();
-            return filteredData;
+            return _product.GetDataById(id);
         }
         [HttpPost("addproduct")]
         public async Task<Product> Post(Product value)
